@@ -10,6 +10,9 @@ ModelRespG = TypeVar("T", bound=BaseModel)
 
 
 class OpenAiModelEnum(Enum):
+    # GPT-4o family
+    GPT_4O_MINI = "gpt-4o-mini"
+
     # GPT-4.1 family
     GPT_4_1 = "gpt-4.1"
     GPT_4_1_MINI = "gpt-4.1-mini"
@@ -54,6 +57,13 @@ class ModelResponse(Generic[ModelRespG]):
 
 
 model_prices: Dict[OpenAiModelEnum, Dict[str, float]] = {
+    # GPT-4o family
+    OpenAiModelEnum.GPT_4O_MINI: {
+        "input": 0.15e-6,   # $0.15 / 1M
+        "cache": 0.075e-6,  # $0.075 / 1M
+        "output": 0.6e-6,   # $0.60 / 1M
+    },
+
     # GPT-4.1 family
     OpenAiModelEnum.GPT_4_1: {
         "input": 2.0e-6,    # $2.00 / 1M

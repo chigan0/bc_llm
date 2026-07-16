@@ -1,17 +1,17 @@
 # bc_llm
 
 Единая обёртка над OpenAI/Azure OpenAI (Responses API) для всех LLM-агентов проекта:
-конфиг модели, ретраи, подсчёт стоимости запроса, трейсинг в langfuse и менеджер промптов
-с поддержкой продукт-специфичных шаблонов.
+конфиг модели, ретраи, подсчёт стоимости запроса и менеджер промптов с поддержкой
+продукт-специфичных шаблонов.
 
 Цель — чтобы все агенты (в т.ч. написанные разными людьми) были устроены одинаково:
-одна точка конфигурации модели, один способ считать деньги, один способ трейсить вызовы.
+одна точка конфигурации модели, один способ считать деньги.
 
 ## Структура
 
 ```
 bc_llm/
-  openai/
+  bc_openai/
     dto.py       — LLMConfig (конфиг модели)
     models.py    — OpenAiModelEnum, цены на токены, ModelResponse
     base.py      — OpenAIBase: create() / parse(), ретраи, подсчёт стоимости
@@ -20,14 +20,13 @@ bc_llm/
   prompt_manager/
     manager.py   — PromptManager: чтение/кэш/рендер промптов из products/<Product>/prompts
   extractor.py   — BaseLLMExtractor: базовый класс для агентов-экстракторов
-  decorators.py  — client_trace: декоратор для langfuse-трейсинга методов агента
   settings.py    — LLMSettings (.env), сейчас только `product`
 ```
 
 ## Быстрый старт
 
 ```python
-from bc_llm.openai import LLMConfig, OpenAiModelEnum, OpenAITextModel
+from bc_llm.bc_openai import LLMConfig, OpenAiModelEnum, OpenAITextModel
 
 config = LLMConfig(
     model_name=OpenAiModelEnum.GPT_5_MINI,
@@ -47,7 +46,7 @@ print(response.cost)      # {"tokens": {...}, "expenses": {...}} или None, е
 Azure — тот же интерфейс, другой конструктор:
 
 ```python
-from bc_llm.openai import AzureTextModel
+from bc_llm.bc_openai import AzureTextModel
 
 model = AzureTextModel(
     api_key="...",
@@ -58,7 +57,7 @@ model = AzureTextModel(
 
 `model_name` — только значения из `OpenAiModelEnum` (сейчас: GPT-4.1 / 4.1-mini / 4.1-nano,
 GPT-5 / 5-mini / 5-nano, GPT-5.1, GPT-5.2). У каждой модели своя цена за токен в
-`openai/models.py:model_prices` — при добавлении новой модели цену нужно прописать там же,
+`bc_openai/models.py:model_prices` — при добавлении новой модели цену нужно прописать там же,
 иначе `calculate_cost` упадёт с `KeyError`.
 
 ## Структурированный вывод
@@ -105,7 +104,7 @@ response.content  # Person(name="Иван", age=32) — уже провалид�
 # agents/person_extractor.py
 from pydantic import BaseModel
 from bc_llm.extractor import BaseLLMExtractor
-from bc_llm.openai import LLMConfig, OpenAiModelEnum
+from bc_llm.bc_openai import LLMConfig, OpenAiModelEnum
 
 class Person(BaseModel):
     name: str
@@ -163,27 +162,6 @@ from bc_llm.prompt_manager import PromptManager
 text = await PromptManager.get_and_render("person_extractor.txt", {"language": "ru"})
 ```
 
-## Трейсинг: `client_trace`
-
-Декоратор оборачивает **async**-метод в langfuse-спан и прокидывает объект `trace` в kwargs.
-
-```python
-from bc_llm.decorators import client_trace
-
-class MyAgent:
-    def __init__(self, client_id: str, session_id: str):
-        self.client_id = client_id
-        self.session_id = session_id
-
-    @client_trace("MyAgent.run", use_inst=True)
-    async def run(self, message: str, trace=None):
-        # trace доступен здесь, если понадобится добавить metadata/score
-        ...
-```
-
-`use_inst=True` — обязателен, если у объекта есть `self.client_id` / `self.session_id`
-(они попадают в трейс как `user_id`/`session_id`). Без `use_inst` эти поля не нужны.
-
 ## Стоимость запроса
 
 `response.cost` (у `create()`/`parse()`) — это:
@@ -206,14 +184,9 @@ class MyAgent:
 3. Промпт — в файл `products/<Product или Common>/prompts/...`, не строкой в коде
    (кроме простых случаев через `instructions`).
 4. Модель/температуру/effort задавать через `LLMConfig` на классе, не как magic-константы внутри метода.
-5. Если агент публичный (вызывается снаружи, не только другим LLM-кодом) — обернуть входную
-   точку в `@client_trace(...)`.
 
 ## Известные ограничения
 
-- `openai/audio.py` — не реализован, это заготовка. См. TODO в файле перед использованием.
+- `bc_openai/audio.py` — не реализован, это заготовка. См. TODO в файле перед использованием.
 - Поддерживается только OpenAI **Responses API** (`responses.create` / `responses.parse`),
   не Chat Completions.
-- Локальный подпакет называется `openai`, как и сторонняя библиотека `openai` — абсолютные
-  импорты внутри `bc_llm` резолвятся в pip-пакет корректно, но при запуске скриптов
-  непосредственно из директории `bc_llm/` (а не как пакета) это может конфликтовать.

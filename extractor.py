@@ -2,10 +2,10 @@ from typing import Any, ClassVar, Mapping, Optional, Type
 
 from pydantic import BaseModel
 
-from bc_llm.openai.base import OpenAIBase
-from bc_llm.openai.text import AzureTextModel
-from bc_llm.openai.models import OpenAiModelEnum
-from bc_llm.openai.dto import LLMConfig
+from bc_llm.bc_openai.base import OpenAIBase
+from bc_llm.bc_openai.text import AzureTextModel
+from bc_llm.bc_openai.models import OpenAiModelEnum
+from bc_llm.bc_openai.dto import LLMConfig
 from bc_llm.prompt_manager import PromptManager
 
 

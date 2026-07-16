@@ -2,14 +2,12 @@ import json
 import asyncio
 from typing import Union, List, Dict, Optional, Any, Callable, Coroutine, Type
 
-from openai import APITimeoutError
+from openai import APITimeoutError, AsyncAzureOpenAI, AsyncOpenAI
 from openai.types.responses import (
     ResponseUsage,
     ResponseFunctionToolCall,
     Response,
 )
-from langfuse import get_client
-from langfuse.openai import AsyncAzureOpenAI, AsyncOpenAI
 
 from .dto import LLMConfig
 from .models import (
@@ -134,17 +132,7 @@ class OpenAIBase:
             else self.config.retry_on_timeout_delay
         )
 
-        langfuse = get_client()
-        trace_id = langfuse.get_current_trace_id()
-
-        if trace_id:
-            with langfuse.start_as_current_span(name=f"LLM: {self.model_name.value}") as span:
-                instruction = kwargs.get("instructions")
-                if instruction:
-                    span.update(metadata={"instruction": instruction})
-                return await self._do_request(api_call, timeout, attempts, delay_base, **kwargs)
-        else:
-            return await self._do_request(api_call, timeout, attempts, delay_base, **kwargs)
+        return await self._do_request(api_call, timeout, attempts, delay_base, **kwargs)
 
     async def _do_request(
         self,

@@ -1,4 +1,4 @@
-from langfuse.openai import AsyncAzureOpenAI, AsyncOpenAI
+from openai import AsyncAzureOpenAI, AsyncOpenAI
 
 from .dto import LLMConfig
 from .base import OpenAIBase
