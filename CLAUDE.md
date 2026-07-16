@@ -21,7 +21,7 @@ internals, not usage.
 ## Development commands
 
 There is currently no build tooling, linter config, or test suite in this repo (no `pyproject.toml`,
-`setup.py`, `Makefile`, or `tests/`). Dependencies are pinned in [req.txt](req.txt) and installed
+`setup.py`, `Makefile`, or `tests/`). Dependencies are listed with minimum versions in [req.txt](req.txt) and installed
 with `pip install -r req.txt` into the parent project's environment. When adding new functionality,
 check whether the parent project has since added test/lint tooling before assuming there is none.
 
